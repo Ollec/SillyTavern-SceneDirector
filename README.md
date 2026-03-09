@@ -6,8 +6,11 @@ A [SillyTavern](https://github.com/SillyTavern/SillyTavern) extension that guide
 
 - **Beat-based scene control** — Navigate forward, backward, or jump to any beat
 - **Phase-aware prompts** — Five narrative phases (setup, rising, confrontation, climax, resolution) with built-in guidance
-- **Per-chat state** — Scene progress is saved per chat, so switching chats won't lose your place
+- **Per-chat state** — Scene progress is saved per chat; switching chats preserves your place and restores automatically when you return
+- **Chat banner** — Persistent bar above the chat showing scene title, current beat, phase progress, and quick navigation controls
+- **Wand menu button** — Clapperboard icon in the extensions menu highlights when a scene is active, with beat counter
 - **Visual progress bar** — Color-coded phase segments show where you are in the scene
+- **Configurable injection depth** — Control how many messages back the beat directive is placed in context
 - **Slash commands** — Full control from the chat input
 - **Advance hints** — Optional hints for when to move to the next beat
 
@@ -35,7 +38,18 @@ Restart SillyTavern and enable the extension.
 
 ### UI Controls
 
-Open the **Scene Director** drawer in the extensions panel. Select a scene from the dropdown and press play. Use the Prev/Next/Stop buttons to navigate beats.
+**Extensions Drawer** — Open the **Scene Director** panel in the extensions sidebar. Select a scene from the dropdown and press play. Use the Prev/Next/Stop buttons to navigate beats. The drawer also has settings for advance hints and injection depth.
+
+**Chat Banner** — When a scene is active, a banner appears at the top of the chat area showing the scene title, current beat label, and a color-coded phase progress bar. The banner includes Prev/Next/Stop buttons for quick navigation without opening the drawer.
+
+**Wand Button** — The clapperboard icon in the extensions menu shows the current beat count (e.g., "2/5") during an active scene. Click it to open the Scene Director drawer.
+
+### Settings
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| Show advance hints | On | Display hints about when to move to the next beat |
+| Injection depth | 1 | How many messages back the beat directive is placed in context (0 = end of context) |
 
 ### Slash Commands
 
@@ -124,13 +138,16 @@ pnpm test
 ├── index.js                 # SillyTavern integration layer
 ├── src/
 │   └── sceneManager.js      # Pure logic (testable, no ST dependencies)
-├── director.html            # UI template
+├── director.html            # UI template (drawer, banner, wand button)
 ├── style.css                # Styling
 ├── scenes/
 │   ├── manifest.json        # Scene registry
 │   └── the_negotiation.json # Sample scene
 ├── tests/
-│   └── sceneManager.test.js # Unit tests (Jest)
+│   ├── sceneManager.test.js # Unit tests (Jest)
+│   └── stCompat.test.js     # Static compatibility tests against ST source
+├── .github/workflows/
+│   └── test.yml             # CI pipeline
 └── manifest.json            # ST extension metadata
 ```
 

@@ -1,3 +1,4 @@
+<!-- Extensions drawer panel -->
 <div id="scene-director-settings">
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
@@ -50,6 +51,34 @@
                     <input type="number" id="sd-injection-depth" value="1" min="0" max="10">
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Wand menu button -->
+<div id="sd-wand-btn" class="list-group-item flex-container flexGap5" title="Scene Director">
+    <div class="fa-solid fa-clapperboard extensionsMenuExtensionButton"></div>
+    <span>Scene Director</span>
+    <span id="sd-wand-status" class="sd-wand-status" style="display: none;"></span>
+</div>
+
+<!-- Chat banner (inserted above chat via JS) -->
+<div id="sd-banner" style="display: none;">
+    <div class="sd-banner-content">
+        <i class="fa-solid fa-clapperboard sd-banner-icon"></i>
+        <span id="sd-banner-title"></span>
+        <span id="sd-banner-beat"></span>
+        <div id="sd-banner-phase-bar"></div>
+    </div>
+    <div class="sd-banner-actions">
+        <div id="sd-banner-prev" class="sd-banner-btn" title="Previous beat">
+            <i class="fa-solid fa-backward-step"></i>
+        </div>
+        <div id="sd-banner-next" class="sd-banner-btn" title="Next beat">
+            <i class="fa-solid fa-forward-step"></i>
+        </div>
+        <div id="sd-banner-stop" class="sd-banner-btn" title="Stop scene">
+            <i class="fa-solid fa-stop"></i>
         </div>
     </div>
 </div>

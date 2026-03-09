@@ -227,6 +227,21 @@ function getSceneStatus() {
 // UI
 // ---------------------------------------------------------------------------
 
+function buildPhaseBar($bar, scene, currentBeat) {
+    $bar.empty();
+    const total = scene.beats.length;
+    for (let i = 0; i < total; i++) {
+        const phase = scene.beats[i].phase;
+        const cls = i < currentBeat ? 'completed' : i === currentBeat ? 'active' : '';
+        $('<div>')
+            .addClass('sd-phase-segment')
+            .addClass(cls)
+            .attr('data-phase', phase)
+            .attr('title', `Beat ${i + 1}: ${scene.beats[i].label} [${phase}]`)
+            .appendTo($bar);
+    }
+}
+
 function updateProgressPanel() {
     const state = getSceneState();
     const settings = getSettings();
@@ -235,6 +250,8 @@ function updateProgressPanel() {
     if (!state.active || !loadedScene) {
         $progress.hide();
         $('#sd-scene-selector').show();
+        updateBanner();
+        updateWandButton();
         return;
     }
 
@@ -250,18 +267,7 @@ function updateProgressPanel() {
     $('#sd-beat-counter').text(`${beatNum} / ${total}`);
 
     // Phase bar (XSS-safe jQuery construction)
-    const $bar = $('#sd-phase-bar');
-    $bar.empty();
-    for (let i = 0; i < total; i++) {
-        const phase = loadedScene.beats[i].phase;
-        const cls = i < state.currentBeat ? 'completed' : i === state.currentBeat ? 'active' : '';
-        $('<div>')
-            .addClass('sd-phase-segment')
-            .addClass(cls)
-            .attr('data-phase', phase)
-            .attr('title', `Beat ${i + 1}: ${loadedScene.beats[i].label} [${phase}]`)
-            .appendTo($bar);
-    }
+    buildPhaseBar($('#sd-phase-bar'), loadedScene, state.currentBeat);
 
     // Advance hint
     if (settings.showHints && beat.advance_hint) {
@@ -271,6 +277,44 @@ function updateProgressPanel() {
     }
 
     $progress.show();
+    updateBanner();
+    updateWandButton();
+}
+
+function updateBanner() {
+    const state = getSceneState();
+    const $banner = $('#sd-banner');
+
+    if (!state.active || !loadedScene) {
+        $banner.hide();
+        return;
+    }
+
+    const beat = loadedScene.beats[state.currentBeat];
+    const beatNum = state.currentBeat + 1;
+    const total = loadedScene.beats.length;
+
+    $('#sd-banner-title').text(loadedScene.title);
+    $('#sd-banner-beat').text(`Beat ${beatNum}/${total}: ${beat.label}`);
+    buildPhaseBar($('#sd-banner-phase-bar'), loadedScene, state.currentBeat);
+
+    $banner.show();
+}
+
+function updateWandButton() {
+    const state = getSceneState();
+    const $btn = $('#sd-wand-btn');
+    const $status = $('#sd-wand-status');
+
+    if (state.active && loadedScene) {
+        const beatNum = state.currentBeat + 1;
+        const total = loadedScene.beats.length;
+        $status.text(`${beatNum}/${total}`).show();
+        $btn.addClass('sd-active');
+    } else {
+        $status.hide();
+        $btn.removeClass('sd-active');
+    }
 }
 
 async function populateSceneSelector() {
@@ -312,6 +356,7 @@ function registerCommands() {
             if (scenes.length === 0) return 'No scene scripts found.';
             return scenes.map(s => `- ${s.id}: ${s.title} (${s.character})`).join('\n');
         },
+        returns: 'list of available scenes',
         helpString: 'Lists all available Scene Director scripts.',
     }));
 
@@ -321,6 +366,7 @@ function registerCommands() {
             const result = await startScene(value.trim());
             return result.text;
         },
+        returns: 'scene start confirmation',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'Scene ID to start',
@@ -337,6 +383,7 @@ function registerCommands() {
             const result = advanceBeat();
             return result.text;
         },
+        returns: 'beat advance confirmation',
         helpString: 'Advance to the next beat in the current scene.',
     }));
 
@@ -346,6 +393,7 @@ function registerCommands() {
             const result = retreatBeat();
             return result.text;
         },
+        returns: 'beat retreat confirmation',
         helpString: 'Go back to the previous beat.',
     }));
 
@@ -355,6 +403,7 @@ function registerCommands() {
             const result = getSceneStatus();
             return result.text;
         },
+        returns: 'current scene and beat status',
         helpString: 'Show the current scene and beat status.',
     }));
 
@@ -364,6 +413,7 @@ function registerCommands() {
             const result = endScene();
             return result.text;
         },
+        returns: 'scene end confirmation',
         helpString: 'End the current scene and clear the directive.',
     }));
 
@@ -375,6 +425,7 @@ function registerCommands() {
             const result = jumpToBeat(n);
             return result.text;
         },
+        returns: 'beat jump confirmation',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'Beat number (1-indexed)',
@@ -416,12 +467,22 @@ function registerEventHandlers() {
 
 jQuery(async () => {
     const html = await $.get(`/${EXTENSION_PATH}/director.html`);
-    $('#extensions_settings').append(html);
+
+    // Parse the template into separate elements
+    const $template = $(html);
+    const $settings = $template.filter('#scene-director-settings');
+    const $wandBtn = $template.filter('#sd-wand-btn');
+    const $banner = $template.filter('#sd-banner');
+
+    // Place elements in the DOM
+    $('#extensions_settings').append($settings);
+    $('#extensionsMenu').append($wandBtn);
+    $('#sheld').prepend($banner);
 
     // Load settings
     const settings = getSettings();
 
-    // Wire UI controls
+    // Wire drawer UI controls
     $('#sd-start-btn').on('click', async () => {
         const sceneId = $('#sd-scene-list').val();
         if (!sceneId) return;
@@ -441,6 +502,30 @@ jQuery(async () => {
         showResult(endScene());
     });
 
+    // Wire banner controls
+    $('#sd-banner-next').on('click', () => {
+        showResult(advanceBeat());
+    });
+
+    $('#sd-banner-prev').on('click', () => {
+        showResult(retreatBeat());
+    });
+
+    $('#sd-banner-stop').on('click', () => {
+        showResult(endScene());
+    });
+
+    // Wire wand button — clicking opens the extensions drawer to Scene Director
+    $('#sd-wand-btn').on('click', () => {
+        const $drawer = $('#scene-director-settings .inline-drawer');
+        const $toggle = $drawer.find('.inline-drawer-toggle');
+        // Open the drawer if closed
+        if (!$drawer.hasClass('open')) {
+            $toggle.trigger('click');
+        }
+    });
+
+    // Settings controls
     $('#sd-show-hints').prop('checked', settings.showHints).on('change', function () {
         settings.showHints = $(this).is(':checked');
         saveSettings();
