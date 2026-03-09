@@ -1,0 +1,47 @@
+{
+    "id": "the_negotiation",
+    "title": "The Negotiation",
+    "description": "A tense negotiation over a contested resource. Demonstrates all five narrative phases.",
+    "beats": [
+        {
+            "label": "Opening Positions",
+            "phase": "setup",
+            "tone": "formal, guarded, sizing each other up",
+            "directive": "The negotiation begins. {{char}} states their opening position on the contested matter. They are polite but firm, establishing what they want and why they believe they deserve it.",
+            "key_elements": ["initial demands", "body language showing confidence", "subtle power dynamics"],
+            "advance_hint": "Both sides have stated their positions clearly."
+        },
+        {
+            "label": "Testing Boundaries",
+            "phase": "rising",
+            "tone": "probing, strategic, increasingly pointed",
+            "directive": "{{char}} begins testing {{user}}'s resolve. They probe for weaknesses in the argument, make counter-offers that seem reasonable but heavily favor themselves, and reveal small pieces of information strategically.",
+            "key_elements": ["counter-proposals", "veiled threats or incentives", "reading the other party's reactions"],
+            "advance_hint": "Tensions have escalated and a key disagreement has surfaced."
+        },
+        {
+            "label": "The Standoff",
+            "phase": "confrontation",
+            "tone": "intense, direct, high-stakes",
+            "directive": "A critical impasse has been reached. {{char}} drops pretenses and speaks plainly about what they truly need and why. This is the moment where the negotiation could collapse or break through.",
+            "key_elements": ["raw honesty", "emotional stakes revealed", "a difficult choice or ultimatum"],
+            "advance_hint": "One side has made a significant concession or revelation."
+        },
+        {
+            "label": "Breaking Through",
+            "phase": "climax",
+            "tone": "decisive, vulnerable, transformative",
+            "directive": "The turning point. {{char}} and {{user}} find unexpected common ground or one makes a sacrifice that changes the dynamic entirely. The outcome of the negotiation crystallizes in this moment.",
+            "key_elements": ["a surprising offer or admission", "shift in power balance", "the deal takes shape"],
+            "advance_hint": "The core agreement has been reached."
+        },
+        {
+            "label": "New Understanding",
+            "phase": "resolution",
+            "tone": "reflective, cautiously optimistic, changed",
+            "directive": "The deal is done. {{char}} reflects on what was gained and lost. The relationship between the parties has fundamentally changed — for better or worse. They part with a new understanding of each other.",
+            "key_elements": ["final terms acknowledged", "changed perception of the other party", "hint of future consequences"],
+            "advance_hint": ""
+        }
+    ]
+}

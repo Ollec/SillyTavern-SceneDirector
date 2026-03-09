@@ -1,0 +1,10 @@
+{
+    "scenes": [
+        {
+            "id": "the_negotiation",
+            "title": "The Negotiation",
+            "character": "Any",
+            "file": "the_negotiation.json"
+        }
+    ]
+}

@@ -1,0 +1,101 @@
+#sd-progress {
+    margin-top: 8px;
+}
+
+.sd-title {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+#sd-beat-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 0.9em;
+}
+
+#sd-beat-label {
+    font-style: italic;
+}
+
+/* Phase progress bar */
+#sd-phase-bar {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 6px;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.sd-phase-segment {
+    flex: 1;
+    background: var(--SmartThemeBodyColor, #333);
+    opacity: 0.3;
+    transition: opacity 0.3s ease;
+}
+
+.sd-phase-segment.active {
+    opacity: 1.0;
+}
+
+.sd-phase-segment.completed {
+    opacity: 0.6;
+}
+
+.sd-phase-segment[data-phase="setup"] { background: var(--SmartThemeQuoteColor, #4a9eff); }
+.sd-phase-segment[data-phase="rising"] { background: #e8a030; }
+.sd-phase-segment[data-phase="confrontation"] { background: #e05050; }
+.sd-phase-segment[data-phase="climax"] { background: #d030d0; }
+.sd-phase-segment[data-phase="resolution"] { background: #50b080; }
+
+/* Backward compat for old phase names */
+.sd-phase-segment[data-phase="escalation"] { background: #e8a030; }
+.sd-phase-segment[data-phase="action"] { background: #e05050; }
+.sd-phase-segment[data-phase="afterglow"] { background: #50b080; }
+
+#sd-advance-hint {
+    font-size: 0.85em;
+    color: var(--SmartThemeQuoteColor, #888);
+    margin-bottom: 8px;
+    font-style: italic;
+}
+
+.sd-controls {
+    display: flex;
+    gap: 4px;
+}
+
+.sd-controls .menu_button {
+    flex: 1;
+}
+
+.sd-section {
+    margin-bottom: 10px;
+}
+
+#sd-scene-selector {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+#sd-scene-selector select {
+    flex: 1;
+}
+
+.sd-settings-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.sd-settings-row label {
+    font-size: 0.85em;
+}
+
+.sd-settings-row input[type="number"] {
+    width: 50px;
+}

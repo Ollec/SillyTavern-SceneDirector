@@ -1,0 +1,55 @@
+<div id="scene-director-settings">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>Scene Director</b>
+            <div class="inline-drawer-icon fa-solid fa-clapperboard down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <!-- Scene selector -->
+            <div id="sd-scene-selector" class="sd-section">
+                <select id="sd-scene-list">
+                    <option value="">-- Select Scene --</option>
+                </select>
+                <div id="sd-start-btn" class="menu_button" title="Start scene">
+                    <i class="fa-solid fa-play"></i>
+                </div>
+            </div>
+
+            <!-- Progress display (hidden when no scene active) -->
+            <div id="sd-progress" class="sd-section" style="display: none;">
+                <div id="sd-scene-title" class="sd-title"></div>
+                <div id="sd-beat-info">
+                    <span id="sd-beat-label"></span>
+                    <span id="sd-beat-counter"></span>
+                </div>
+                <div id="sd-phase-bar"></div>
+                <div id="sd-advance-hint"></div>
+                <div class="sd-controls">
+                    <div id="sd-prev-btn" class="menu_button" title="Previous beat">
+                        <i class="fa-solid fa-backward-step"></i> Prev
+                    </div>
+                    <div id="sd-next-btn" class="menu_button" title="Next beat">
+                        Next <i class="fa-solid fa-forward-step"></i>
+                    </div>
+                    <div id="sd-stop-btn" class="menu_button" title="Stop scene">
+                        <i class="fa-solid fa-stop"></i> Stop
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings -->
+            <div class="sd-section">
+                <div class="sd-settings-row">
+                    <label>
+                        <input type="checkbox" id="sd-show-hints" checked>
+                        Show advance hints
+                    </label>
+                </div>
+                <div class="sd-settings-row">
+                    <label for="sd-injection-depth">Injection depth:</label>
+                    <input type="number" id="sd-injection-depth" value="1" min="0" max="10">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
