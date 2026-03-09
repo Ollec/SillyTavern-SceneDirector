@@ -7,6 +7,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: SillyTavern/SillyTavern
+          ref: release
+          path: SillyTavern
+          fetch-depth: 1
       - uses: pnpm/action-setup@c5ba7f7862a0f64c1b1a05fbac13e0b8e86ba08c # v4
         with:
           version: 9
@@ -17,3 +23,5 @@ jobs:
           cache-dependency-path: tests/pnpm-lock.yaml
       - run: cd tests && pnpm install
       - run: cd tests && pnpm run test:coverage
+        env:
+          ST_PATH: ${{ github.workspace }}/SillyTavern
