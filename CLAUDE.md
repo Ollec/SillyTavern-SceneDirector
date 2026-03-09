@@ -47,7 +47,7 @@ ST_PATH=/path/to/SillyTavern cd tests && pnpm test
 - Per-chat state (`active`, `sceneId`, `currentBeat`) lives in `chat_metadata` with `sd_` prefixed keys — this is SillyTavern's standard pattern for chat-scoped data (see Author's Note for reference)
 - Global preferences (`showHints`, `injectionDepth`) live in `extension_settings['scene-director']`
 
-**Scene data:** JSON files in `scenes/`, registered in `scenes/manifest.json`. Each scene has a `beats` array where each beat specifies `label`, `phase`, `tone`, `directive`, `key_elements`, and optional `advance_hint`. Scenes can optionally define a `phases` object to override default phase prompts and colors.
+**Scene data:** Scenes are stored in a registry in `extension_settings['scene-director'].scenes[]`. Each entry has `id`, `title`, `character`, `source` ('bundled' or 'imported'), and optionally `path` (for imported scenes uploaded via ST's file API). On first run, the registry is seeded from `scenes/manifest.json`. Bundled scenes load from `EXTENSION_PATH/scenes/`, imported scenes load from their uploaded file path. Each scene has a `beats` array where each beat specifies `label`, `phase`, `tone`, `directive`, `key_elements`, and optional `advance_hint`. Scenes can optionally define a `phases` object to override default phase prompts and colors.
 
 **Phase system:** Phases are configurable at the scene level. Default phases (setup, rising, confrontation, climax, resolution) are defined in `PHASE_PROMPTS`. Scenes can define custom phases via a `phases` key with per-phase `prompt` and `color`. Resolution order: scene-level → alias → global default → empty. When a scene defines `phases`, `PHASE_ALIASES` are bypassed. Colors fall through to `DEFAULT_PHASE_COLORS` then a deterministic hash. CSS handles the 8 known phase names; JS applies inline colors for custom/unknown phases.
 
@@ -56,7 +56,7 @@ ST_PATH=/path/to/SillyTavern cd tests && pnpm test
 ## Testing
 
 - **Unit tests** (`tests/sceneManager.test.js`) — 54 tests covering pure logic: validation, navigation, injection building, status formatting, phase aliases, custom phase resolution, phase colors
-- **Compatibility tests** (`tests/stCompat.test.js`) — 28 tests that parse actual SillyTavern source files to verify exports, event constants, method signatures, and import path resolution still match what the extension depends on
+- **Compatibility tests** (`tests/stCompat.test.js`) — 33 tests that parse actual SillyTavern source files to verify exports (including `getRequestHeaders`, `Popup`, `POPUP_RESULT`), event constants, method signatures, and import path resolution still match what the extension depends on
 - **Coverage** — 90% threshold on branches/functions/lines/statements, enforced by Jest config
 - **CI** — GitHub Actions (`.github/workflows/test.yml`) runs both test suites with pnpm, shallow-clones SillyTavern `release` branch for compat tests
 
@@ -76,3 +76,6 @@ Key SillyTavern APIs used:
 - `extension_settings` + `saveSettingsDebounced()` — global persistent settings
 - `eventSource.on(event_types.GENERATION_STARTED | CHAT_CHANGED)` — lifecycle hooks
 - `SlashCommandParser.addCommandObject()` — register `/scene-*` commands
+- `getRequestHeaders()` — CSRF-authenticated headers for file API calls
+- `Popup.show.confirm()` / `POPUP_RESULT` — confirmation dialogs (from `scripts/popup.js`)
+- File API (`/api/files/upload`, `/api/files/delete`) — store/remove imported scene files

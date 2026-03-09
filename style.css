@@ -85,6 +85,10 @@
     flex: 1;
 }
 
+#sd-import-btn {
+    text-align: center;
+}
+
 .sd-settings-row {
     display: flex;
     align-items: center;

@@ -4,31 +4,11 @@ This guide covers how to create scene scripts for Scene Director.
 
 ## Quick Start
 
-1. Create a JSON file in the `scenes/` directory (e.g., `scenes/my_scene.json`)
-2. Register it in `scenes/manifest.json`
-3. Restart SillyTavern or reload the extension
+1. Create a JSON file following the format below (e.g., `my_scene.json`)
+2. In SillyTavern, open the Scene Director panel and click **Import Scene**
+3. Select your file — the scene appears immediately in the dropdown
 
-## Manifest
-
-The manifest registers your scenes so Scene Director can find them. Each entry needs an `id`, `title`, `character`, and `file`:
-
-```json
-{
-    "scenes": [
-        {
-            "id": "my_scene",
-            "title": "My Scene",
-            "character": "Any",
-            "file": "my_scene.json"
-        }
-    ]
-}
-```
-
-- **id** — Unique identifier, used by `/scene-start <id>`
-- **title** — Display name shown in the UI dropdown
-- **character** — Which character the scene is designed for (informational only)
-- **file** — Filename relative to the `scenes/` directory
+You can also import via the slash command `/scene-import` or pass inline JSON for programmatic use.
 
 ## Scene File Structure
 

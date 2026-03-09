@@ -11,6 +11,7 @@ A [SillyTavern](https://github.com/SillyTavern/SillyTavern) extension that guide
 - **Wand menu button** — Clapperboard icon in the extensions menu highlights when a scene is active, with beat counter
 - **Visual progress bar** — Color-coded phase segments show where you are in the scene
 - **Configurable injection depth** — Control how many messages back the beat directive is placed in context
+- **Scene import/delete** — Import your own scene JSON files through the UI or slash commands; delete imported scenes when no longer needed
 - **Slash commands** — Full control from the chat input
 - **Advance hints** — Optional hints for when to move to the next beat
 
@@ -64,14 +65,16 @@ Restart SillyTavern and enable the extension.
 | `/scene-beat <n>` | Jump to beat number n |
 | `/scene-status` | Show current scene and beat info |
 | `/scene-stop` | End the current scene |
+| `/scene-import` | Import a scene file (opens file picker, or pass inline JSON) |
+| `/scene-delete <id>` | Delete an imported scene by ID (with confirmation) |
 
 ![Slash command autocomplete](docs/images/slash-commands.png)
 
 ## Creating Scenes
 
-Scenes are JSON files in the `scenes/` directory with a title and an array of beats — each with a directive, tone, and narrative phase. See the full **[Scene Creation Guide](docs/creating-scenes.md)** for details on writing directives, using phases, and structuring beats.
+Scenes are JSON files with a title and an array of beats — each with a directive, tone, and narrative phase. You can import scene files through the **Import Scene** button in the extensions drawer or via the `/scene-import` slash command. Scene Director also ships with a bundled sample scene.
 
-A sample scene is included at [scenes/the_negotiation.json](scenes/the_negotiation.json).
+See the full **[Scene Creation Guide](docs/creating-scenes.md)** for details on writing directives, using phases, and structuring beats. A sample scene is included at [scenes/the_negotiation.json](scenes/the_negotiation.json).
 
 ## Development
 
@@ -93,8 +96,8 @@ pnpm test
 ├── director.html            # UI template (drawer, banner, wand button)
 ├── style.css                # Styling
 ├── scenes/
-│   ├── manifest.json        # Scene registry
-│   └── the_negotiation.json # Sample scene
+│   ├── manifest.json        # Bundled scene registry (seeds first-run)
+│   └── the_negotiation.json # Bundled sample scene
 ├── tests/
 │   ├── sceneManager.test.js # Unit tests (Jest)
 │   └── stCompat.test.js     # Static compatibility tests against ST source

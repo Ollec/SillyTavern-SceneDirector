@@ -3,9 +3,11 @@ import {
     chat_metadata,
     eventSource,
     event_types,
+    getRequestHeaders,
     saveSettingsDebounced,
     setExtensionPrompt,
 } from '../../../../script.js';
+import { Popup, POPUP_RESULT } from '../../../popup.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from '../../../slash-commands/SlashCommandArgument.js';
@@ -75,28 +77,43 @@ function setSceneState(state) {
 }
 
 // ---------------------------------------------------------------------------
-// Scene loading
+// Scene registry & loading
 // ---------------------------------------------------------------------------
 
-async function loadSceneManifest() {
+async function initSceneRegistry() {
+    const settings = getSettings();
+    if (settings.scenes !== undefined) return;
+
+    // First-run: seed registry from bundled manifest
     try {
         const response = await fetch(`/${EXTENSION_PATH}/scenes/manifest.json`);
-        if (!response.ok) return [];
+        if (!response.ok) { settings.scenes = []; saveSettings(); return; }
         const data = await response.json();
-        return data.scenes || [];
+        settings.scenes = (data.scenes || []).map(s => ({ ...s, source: 'bundled' }));
     } catch {
-        console.warn('[Scene Director] Could not load scene manifest');
-        return [];
+        settings.scenes = [];
     }
+    saveSettings();
+}
+
+function getSceneRegistry() {
+    return getSettings().scenes || [];
 }
 
 async function loadScene(sceneId) {
-    const manifest = await loadSceneManifest();
-    const entry = manifest.find(s => s.id === sceneId);
+    const registry = getSceneRegistry();
+    const entry = registry.find(s => s.id === sceneId);
     if (!entry) return null;
 
+    let url;
+    if (entry.source === 'imported' && entry.path) {
+        url = entry.path;
+    } else {
+        url = `/${EXTENSION_PATH}/scenes/${entry.file || entry.id + '.json'}`;
+    }
+
     try {
-        const response = await fetch(`/${EXTENSION_PATH}/scenes/${entry.file}`);
+        const response = await fetch(url);
         if (!response.ok) return null;
         const scene = await response.json();
 
@@ -111,6 +128,108 @@ async function loadScene(sceneId) {
         console.warn(`[Scene Director] Could not load scene: ${sceneId}`);
         return null;
     }
+}
+
+// ---------------------------------------------------------------------------
+// Scene import & delete
+// ---------------------------------------------------------------------------
+
+async function importScene(file) {
+    let scene;
+    try {
+        const text = await file.text();
+        scene = JSON.parse(text);
+    } catch {
+        return { text: `Failed to parse "${file.name}" as JSON.`, ok: false };
+    }
+
+    const error = validateScene(scene);
+    if (error) return { text: `Invalid scene: ${error}`, ok: false };
+
+    // Ensure scene has an id
+    if (!scene.id) {
+        scene.id = scene.title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+    }
+
+    const safeName = `sd_scene_${scene.id.replace(/[^a-z0-9_-]/gi, '_')}.json`;
+
+    try {
+        const uploadResp = await fetch('/api/files/upload', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ name: safeName, data: btoa(new TextEncoder().encode(JSON.stringify(scene, null, 2)).reduce((s, b) => s + String.fromCharCode(b), '')) }),
+        });
+        if (!uploadResp.ok) {
+            const errText = await uploadResp.text();
+            return { text: `Upload failed: ${errText}`, ok: false };
+        }
+        const { path } = await uploadResp.json();
+
+        // Add or overwrite in registry
+        const settings = getSettings();
+        const existing = settings.scenes.findIndex(s => s.id === scene.id);
+        const entry = {
+            id: scene.id,
+            title: scene.title,
+            character: scene.character || 'Any',
+            source: 'imported',
+            path,
+        };
+        if (existing >= 0) {
+            settings.scenes[existing] = entry;
+        } else {
+            settings.scenes.push(entry);
+        }
+        saveSettings();
+
+        return { text: `Imported scene "${scene.title}".`, ok: true };
+    } catch (err) {
+        return { text: `Import failed: ${err.message}`, ok: false };
+    }
+}
+
+async function importSceneFromJSON(jsonString) {
+    let scene;
+    try {
+        scene = JSON.parse(jsonString);
+    } catch {
+        return { text: 'Failed to parse JSON string.', ok: false };
+    }
+
+    // Reuse importScene by creating a synthetic File
+    const blob = new Blob([JSON.stringify(scene)], { type: 'application/json' });
+    const file = new File([blob], `${scene.id || 'scene'}.json`, { type: 'application/json' });
+    return importScene(file);
+}
+
+async function deleteScene(sceneId) {
+    const settings = getSettings();
+    const entry = settings.scenes.find(s => s.id === sceneId);
+    if (!entry) return { text: `Scene "${sceneId}" not found.`, ok: false };
+    if (entry.source !== 'imported') return { text: `Cannot delete bundled scene "${entry.title}".`, ok: false };
+
+    // Delete file from ST data API
+    try {
+        await fetch('/api/files/delete', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ path: entry.path }),
+        });
+    } catch (err) {
+        console.warn(`[Scene Director] Failed to delete file: ${err.message}`);
+    }
+
+    // Remove from registry
+    settings.scenes = settings.scenes.filter(s => s.id !== sceneId);
+    saveSettings();
+
+    // End scene if currently active
+    const state = getSceneState();
+    if (state.active && state.sceneId === sceneId) {
+        endScene();
+    }
+
+    return { text: `Deleted scene "${entry.title}".`, ok: true };
 }
 
 // ---------------------------------------------------------------------------
@@ -325,8 +444,8 @@ function updateWandButton() {
     }
 }
 
-async function populateSceneSelector() {
-    const scenes = await loadSceneManifest();
+function populateSceneSelector() {
+    const scenes = getSceneRegistry();
     const $select = $('#sd-scene-list');
 
     // Keep the default option
@@ -335,7 +454,7 @@ async function populateSceneSelector() {
     for (const scene of scenes) {
         $('<option>')
             .val(scene.id)
-            .text(`${scene.title} (${scene.character})`)
+            .text(`${scene.title} (${scene.character || 'Any'})`)
             .appendTo($select);
     }
 }
@@ -359,10 +478,10 @@ function showResult(result) {
 function registerCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'scene-list',
-        callback: async () => {
-            const scenes = await loadSceneManifest();
+        callback: () => {
+            const scenes = getSceneRegistry();
             if (scenes.length === 0) return 'No scene scripts found.';
-            return scenes.map(s => `- ${s.id}: ${s.title} (${s.character})`).join('\n');
+            return scenes.map(s => `- ${s.id}: ${s.title} (${s.character || 'Any'})`).join('\n');
         },
         returns: 'list of available scenes',
         helpString: 'Lists all available Scene Director scripts.',
@@ -442,6 +561,59 @@ function registerCommands() {
             }),
         ],
         helpString: 'Jump to a specific beat number. Usage: /scene-beat 3',
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'scene-import',
+        callback: async (_args, value) => {
+            const trimmed = (value || '').trim();
+            if (trimmed) {
+                // Programmatic: accept inline JSON
+                const result = await importSceneFromJSON(trimmed);
+                if (result.ok) populateSceneSelector();
+                return result.text;
+            }
+            // Interactive: trigger file picker
+            $('#sd-import-input').trigger('click');
+            return 'Opening file picker…';
+        },
+        returns: 'import confirmation',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Optional: inline JSON scene data for programmatic import',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
+            }),
+        ],
+        helpString: 'Import a scene file. Without arguments, opens a file picker. With JSON data, imports directly.',
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'scene-delete',
+        callback: async (_args, value) => {
+            const sceneId = (value || '').trim();
+            if (!sceneId) return 'Usage: /scene-delete <scene_id>';
+
+            const entry = getSceneRegistry().find(s => s.id === sceneId);
+            if (!entry) return `Scene "${sceneId}" not found.`;
+            if (entry.source !== 'imported') return `Cannot delete bundled scene "${entry.title}".`;
+
+            const confirm = await Popup.show.confirm('Delete scene?', `Are you sure you want to delete "${entry.title}"?`);
+            if (confirm !== POPUP_RESULT.AFFIRMATIVE) return 'Delete cancelled.';
+
+            const result = await deleteScene(sceneId);
+            if (result.ok) populateSceneSelector();
+            return result.text;
+        },
+        returns: 'delete confirmation',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Scene ID to delete',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+            }),
+        ],
+        helpString: 'Delete an imported scene. Bundled scenes cannot be deleted. Usage: /scene-delete scene_id',
     }));
 }
 
@@ -533,6 +705,17 @@ jQuery(async () => {
         }
     });
 
+    // Wire import controls
+    $('#sd-import-btn').on('click', () => $('#sd-import-input').trigger('click'));
+    $('#sd-import-input').on('change', async (e) => {
+        for (const file of e.target.files) {
+            const result = await importScene(file);
+            showResult(result);
+        }
+        e.target.value = ''; // Reset for re-import
+        populateSceneSelector();
+    });
+
     // Settings controls
     $('#sd-show-hints').prop('checked', settings.showHints).on('change', function () {
         settings.showHints = $(this).is(':checked');
@@ -546,8 +729,11 @@ jQuery(async () => {
         injectCurrentBeat();
     });
 
+    // Initialize scene registry (first-run seeds from bundled manifest)
+    await initSceneRegistry();
+
     // Populate scene dropdown
-    await populateSceneSelector();
+    populateSceneSelector();
 
     // Register commands and events
     registerCommands();

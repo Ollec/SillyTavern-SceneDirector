@@ -45,7 +45,7 @@ function expectExport(source, name, filePath) {
 // Preload sources once
 // ---------------------------------------------------------------------------
 
-let extensionsSrc, scriptSrc, eventsSrc, slashCommandSrc, slashCommandParserSrc, slashCommandArgSrc;
+let extensionsSrc, scriptSrc, eventsSrc, slashCommandSrc, slashCommandParserSrc, slashCommandArgSrc, popupSrc;
 
 beforeAll(() => {
     if (!existsSync(ST_PATH)) {
@@ -60,6 +60,7 @@ beforeAll(() => {
     slashCommandSrc = readSource('scripts/slash-commands/SlashCommand.js');
     slashCommandParserSrc = readSource('scripts/slash-commands/SlashCommandParser.js');
     slashCommandArgSrc = readSource('scripts/slash-commands/SlashCommandArgument.js');
+    popupSrc = readSource('scripts/popup.js');
 });
 
 // ---------------------------------------------------------------------------
@@ -95,6 +96,10 @@ describe('SillyTavern script.js exports', () => {
 
     test('exports setExtensionPrompt', () => {
         expectExport(scriptSrc, 'setExtensionPrompt');
+    });
+
+    test('exports getRequestHeaders', () => {
+        expectExport(scriptSrc, 'getRequestHeaders');
     });
 });
 
@@ -172,6 +177,20 @@ describe('SillyTavern SlashCommandArgument exports', () => {
 });
 
 // ---------------------------------------------------------------------------
+// popup.js — Popup class and POPUP_RESULT
+// ---------------------------------------------------------------------------
+
+describe('SillyTavern popup.js exports', () => {
+    test('exports Popup class', () => {
+        expectExport(popupSrc, 'Popup');
+    });
+
+    test('exports POPUP_RESULT', () => {
+        expectExport(popupSrc, 'POPUP_RESULT');
+    });
+});
+
+// ---------------------------------------------------------------------------
 // setExtensionPrompt signature — we rely on (key, value, position, depth)
 // ---------------------------------------------------------------------------
 
@@ -196,6 +215,7 @@ describe('Required SillyTavern source files exist', () => {
         'scripts/slash-commands/SlashCommand.js',
         'scripts/slash-commands/SlashCommandParser.js',
         'scripts/slash-commands/SlashCommandArgument.js',
+        'scripts/popup.js',
     ];
 
     for (const file of requiredFiles) {
@@ -222,6 +242,7 @@ describe('Import paths in index.js resolve correctly', () => {
         { path: '../../../slash-commands/SlashCommandParser.js', desc: 'SlashCommandParser.js' },
         { path: '../../../slash-commands/SlashCommand.js', desc: 'SlashCommand.js' },
         { path: '../../../slash-commands/SlashCommandArgument.js', desc: 'SlashCommandArgument.js' },
+        { path: '../../../popup.js', desc: 'popup.js' },
     ];
 
     for (const { path: importPath, desc } of imports) {
