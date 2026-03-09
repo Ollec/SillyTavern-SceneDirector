@@ -17,8 +17,3 @@ jobs:
           cache-dependency-path: tests/pnpm-lock.yaml
       - run: cd tests && pnpm install
       - run: cd tests && pnpm run test:coverage
-      - name: Upload coverage to Codacy
-        uses: codacy/codacy-coverage-reporter-action@89d6c85cfafaec52c72b6c5e8b2878d33104c699 # v1
-        with:
-          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-          coverage-reports: tests/coverage/lcov.info
