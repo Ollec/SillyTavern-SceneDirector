@@ -1,14 +1,14 @@
-import { extension_settings, renderExtensionTemplateAsync, saveMetadataDebounced } from '../../extensions.js';
+import { extension_settings, saveMetadataDebounced } from '../../../extensions.js';
 import {
     chat_metadata,
     eventSource,
     event_types,
     saveSettingsDebounced,
     setExtensionPrompt,
-} from '../../../script.js';
-import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
-import { SlashCommand } from '../../slash-commands/SlashCommand.js';
-import { ARGUMENT_TYPE, SlashCommandArgument } from '../../slash-commands/SlashCommandArgument.js';
+} from '../../../../script.js';
+import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
+import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument } from '../../../slash-commands/SlashCommandArgument.js';
 import {
     validateScene,
     buildBeatInjection,
