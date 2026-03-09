@@ -9,8 +9,11 @@ import {
     advanceBeatState,
     retreatBeatState,
     jumpToBeatState,
+    resolvePhasePrompt,
+    resolvePhaseColor,
     PHASE_PROMPTS,
     PHASE_ALIASES,
+    DEFAULT_PHASE_COLORS,
 } from '../src/sceneManager.js';
 
 // ---------------------------------------------------------------------------
@@ -175,6 +178,31 @@ describe('buildBeatInjection', () => {
         expect(injection).toContain('Beat 1/3');
         expect(injection).toContain('Tone: calm.');
     });
+
+    test('uses scene-level phase prompt when phases defined', () => {
+        const scene = makeScene({
+            phases: {
+                setup: { prompt: 'Custom setup guidance.' },
+            },
+        });
+        const injection = buildBeatInjection(scene, 0);
+
+        expect(injection).toContain('Custom setup guidance.');
+        expect(injection).not.toContain(PHASE_PROMPTS.setup);
+    });
+
+    test('bypasses aliases when scene defines phases', () => {
+        const scene = makeScene({
+            phases: {
+                escalation: { prompt: 'Build desire and tension.' },
+            },
+        });
+        scene.beats[0].phase = 'escalation';
+        const injection = buildBeatInjection(scene, 0);
+
+        expect(injection).toContain('Build desire and tension.');
+        expect(injection).not.toContain(PHASE_PROMPTS.rising);
+    });
 });
 
 // ---------------------------------------------------------------------------
@@ -186,6 +214,84 @@ describe('PHASE_ALIASES', () => {
         expect(PHASE_ALIASES.escalation).toBe('rising');
         expect(PHASE_ALIASES.action).toBe('confrontation');
         expect(PHASE_ALIASES.afterglow).toBe('resolution');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// resolvePhasePrompt
+// ---------------------------------------------------------------------------
+
+describe('resolvePhasePrompt', () => {
+    test('returns scene-level prompt when phases defined', () => {
+        const scene = makeScene({ phases: { setup: { prompt: 'Custom.' } } });
+        expect(resolvePhasePrompt(scene, 'setup')).toBe('Custom.');
+    });
+
+    test('returns global default when no phases key', () => {
+        const scene = makeScene();
+        expect(resolvePhasePrompt(scene, 'setup')).toBe(PHASE_PROMPTS.setup);
+    });
+
+    test('resolves alias when no phases key', () => {
+        const scene = makeScene();
+        expect(resolvePhasePrompt(scene, 'escalation')).toBe(PHASE_PROMPTS.rising);
+    });
+
+    test('bypasses alias when phases key defined', () => {
+        const scene = makeScene({ phases: { setup: { prompt: 'Custom.' } } });
+        // escalation is not in scene.phases, and aliases are bypassed
+        expect(resolvePhasePrompt(scene, 'escalation')).toBe('');
+    });
+
+    test('returns empty string for unknown phase', () => {
+        const scene = makeScene();
+        expect(resolvePhasePrompt(scene, 'mystery')).toBe('');
+    });
+
+    test('returns empty string when phase has empty prompt', () => {
+        const scene = makeScene({ phases: { setup: { prompt: '' } } });
+        expect(resolvePhasePrompt(scene, 'setup')).toBe('');
+    });
+
+    test('returns empty string when phase entry has no prompt', () => {
+        const scene = makeScene({ phases: { setup: { color: '#fff' } } });
+        expect(resolvePhasePrompt(scene, 'setup')).toBe('');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// resolvePhaseColor
+// ---------------------------------------------------------------------------
+
+describe('resolvePhaseColor', () => {
+    test('returns scene-level color when defined', () => {
+        const scene = makeScene({ phases: { setup: { color: '#ff0000' } } });
+        expect(resolvePhaseColor(scene, 'setup')).toBe('#ff0000');
+    });
+
+    test('returns default color for known phase', () => {
+        const scene = makeScene();
+        expect(resolvePhaseColor(scene, 'setup')).toBe(DEFAULT_PHASE_COLORS.setup);
+    });
+
+    test('returns valid HSL for unknown phase', () => {
+        const scene = makeScene();
+        const color = resolvePhaseColor(scene, 'mystery');
+        expect(color).toMatch(/^hsl\(\d+, 60%, 50%\)$/);
+    });
+
+    test('hash color is deterministic', () => {
+        const scene = makeScene();
+        const color1 = resolvePhaseColor(scene, 'mystery');
+        const color2 = resolvePhaseColor(scene, 'mystery');
+        expect(color1).toBe(color2);
+    });
+
+    test('DEFAULT_PHASE_COLORS covers all 8 known phases', () => {
+        const expected = ['setup', 'rising', 'confrontation', 'climax', 'resolution', 'escalation', 'action', 'afterglow'];
+        for (const phase of expected) {
+            expect(DEFAULT_PHASE_COLORS[phase]).toBeDefined();
+        }
     });
 });
 

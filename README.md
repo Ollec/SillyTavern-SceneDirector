@@ -5,7 +5,7 @@ A [SillyTavern](https://github.com/SillyTavern/SillyTavern) extension that guide
 ## Features
 
 - **Beat-based scene control** — Navigate forward, backward, or jump to any beat
-- **Phase-aware prompts** — Five narrative phases (setup, rising, confrontation, climax, resolution) with built-in guidance
+- **Phase-aware prompts** — Five default narrative phases with built-in guidance, or define custom phases per scene with your own prompts and colors
 - **Per-chat state** — Scene progress is saved per chat; switching chats preserves your place and restores automatically when you return
 - **Chat banner** — Persistent bar above the chat showing scene title, current beat, phase progress, and quick navigation controls
 - **Wand menu button** — Clapperboard icon in the extensions menu highlights when a scene is active, with beat counter
@@ -42,6 +42,8 @@ Restart SillyTavern and enable the extension.
 
 **Chat Banner** — When a scene is active, a banner appears at the top of the chat area showing the scene title, current beat label, and a color-coded phase progress bar. The banner includes Prev/Next/Stop buttons for quick navigation without opening the drawer.
 
+![Chat banner showing scene progress](docs/images/chat-banner.png)
+
 **Wand Button** — The clapperboard icon in the extensions menu shows the current beat count (e.g., "2/5") during an active scene. Click it to open the Scene Director drawer.
 
 ### Settings
@@ -63,64 +65,13 @@ Restart SillyTavern and enable the extension.
 | `/scene-status` | Show current scene and beat info |
 | `/scene-stop` | End the current scene |
 
+![Slash command autocomplete](docs/images/slash-commands.png)
+
 ## Creating Scenes
 
-Scenes are JSON files in the `scenes/` directory. Register them in `scenes/manifest.json`:
+Scenes are JSON files in the `scenes/` directory with a title and an array of beats — each with a directive, tone, and narrative phase. See the full **[Scene Creation Guide](docs/creating-scenes.md)** for details on writing directives, using phases, and structuring beats.
 
-```json
-{
-    "scenes": [
-        {
-            "id": "my_scene",
-            "title": "My Scene",
-            "character": "Any",
-            "file": "my_scene.json"
-        }
-    ]
-}
-```
-
-Each scene file contains a title and an array of beats:
-
-```json
-{
-    "id": "my_scene",
-    "title": "My Scene",
-    "beats": [
-        {
-            "label": "The Opening",
-            "phase": "setup",
-            "tone": "calm, curious",
-            "directive": "{{char}} introduces themselves and establishes the setting.",
-            "key_elements": ["first impressions", "environment details"],
-            "advance_hint": "Once introductions are complete."
-        }
-    ]
-}
-```
-
-### Beat Fields
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `label` | Yes | Display name for the beat |
-| `phase` | Yes | Narrative phase (see below) |
-| `tone` | Yes | Emotional/stylistic tone for the AI |
-| `directive` | Yes | Instructions for how the AI should play the beat |
-| `key_elements` | No | Details to incorporate naturally |
-| `advance_hint` | No | When to move to the next beat |
-
-### Phases
-
-| Phase | Color | Guidance |
-|-------|-------|----------|
-| `setup` | Blue | Introduce environment, characters, and stakes |
-| `rising` | Orange | Build tension, develop conflict or desire |
-| `confrontation` | Red | Central encounter or challenge, vivid and energetic |
-| `climax` | Purple | Peak intensity, the decisive moment |
-| `resolution` | Green | Wind down, consequences, emotional impact |
-
-Use `{{char}}` and `{{user}}` in directives — SillyTavern substitutes them with character and user names.
+A sample scene is included at [scenes/the_negotiation.json](scenes/the_negotiation.json).
 
 ## Development
 
@@ -136,6 +87,7 @@ pnpm test
 
 ```
 ├── index.js                 # SillyTavern integration layer
+├── docs/images/             # Screenshots for README
 ├── src/
 │   └── sceneManager.js      # Pure logic (testable, no ST dependencies)
 ├── director.html            # UI template (drawer, banner, wand button)

@@ -17,6 +17,8 @@ import {
     advanceBeatState,
     retreatBeatState,
     jumpToBeatState,
+    resolvePhaseColor,
+    DEFAULT_PHASE_COLORS,
 } from './src/sceneManager.js';
 
 // ---------------------------------------------------------------------------
@@ -233,12 +235,18 @@ function buildPhaseBar($bar, scene, currentBeat) {
     for (let i = 0; i < total; i++) {
         const phase = scene.beats[i].phase;
         const cls = i < currentBeat ? 'completed' : i === currentBeat ? 'active' : '';
-        $('<div>')
+        const $seg = $('<div>')
             .addClass('sd-phase-segment')
             .addClass(cls)
             .attr('data-phase', phase)
-            .attr('title', `Beat ${i + 1}: ${scene.beats[i].label} [${phase}]`)
-            .appendTo($bar);
+            .attr('title', `Beat ${i + 1}: ${scene.beats[i].label} [${phase}]`);
+
+        // Apply inline color for custom or unknown phases; let CSS handle known defaults
+        if (!DEFAULT_PHASE_COLORS[phase] || (scene.phases && scene.phases[phase])) {
+            $seg.css('background', resolvePhaseColor(scene, phase));
+        }
+
+        $seg.appendTo($bar);
     }
 }
 

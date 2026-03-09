@@ -16,6 +16,17 @@ export const PHASE_ALIASES = {
     afterglow: 'resolution',
 };
 
+export const DEFAULT_PHASE_COLORS = {
+    setup: '#4a9eff',
+    rising: '#e8a030',
+    confrontation: '#e05050',
+    climax: '#d030d0',
+    resolution: '#50b080',
+    escalation: '#e8a030',
+    action: '#e05050',
+    afterglow: '#50b080',
+};
+
 // ---------------------------------------------------------------------------
 // Scene validation
 // ---------------------------------------------------------------------------
@@ -48,12 +59,50 @@ export function canRetreat(currentBeat) {
 }
 
 // ---------------------------------------------------------------------------
-// Prompt injection builder
+// Phase resolution
 // ---------------------------------------------------------------------------
 
-function resolvePhase(phase) {
-    return PHASE_ALIASES[phase] || phase;
+function hashColor(name) {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = ((hash % 360) + 360) % 360;
+    return `hsl(${hue}, 60%, 50%)`;
 }
+
+export function resolvePhasePrompt(scene, phaseName) {
+    // 1. Scene-level custom phase
+    if (scene.phases && scene.phases[phaseName]) {
+        return scene.phases[phaseName].prompt || '';
+    }
+    // 2. Global alias → global prompt (only when scene has no phases key)
+    if (!scene.phases) {
+        const aliased = PHASE_ALIASES[phaseName];
+        if (aliased && PHASE_PROMPTS[aliased]) {
+            return PHASE_PROMPTS[aliased];
+        }
+    }
+    // 3. Global default
+    return PHASE_PROMPTS[phaseName] || '';
+}
+
+export function resolvePhaseColor(scene, phaseName) {
+    // 1. Scene-level
+    if (scene.phases && scene.phases[phaseName] && scene.phases[phaseName].color) {
+        return scene.phases[phaseName].color;
+    }
+    // 2. Default color map
+    if (DEFAULT_PHASE_COLORS[phaseName]) {
+        return DEFAULT_PHASE_COLORS[phaseName];
+    }
+    // 3. Deterministic hash-based fallback
+    return hashColor(phaseName);
+}
+
+// ---------------------------------------------------------------------------
+// Prompt injection builder
+// ---------------------------------------------------------------------------
 
 export function buildBeatInjection(scene, beatIndex) {
     if (!scene || !scene.beats || !scene.beats[beatIndex]) return '';
@@ -66,8 +115,7 @@ export function buildBeatInjection(scene, beatIndex) {
         ? `\nIncorporate these details if natural: ${beat.key_elements.join(', ')}.`
         : '';
 
-    const phaseKey = resolvePhase(beat.phase);
-    const phaseGuide = PHASE_PROMPTS[phaseKey] || '';
+    const phaseGuide = resolvePhasePrompt(scene, beat.phase);
 
     return [
         `[Scene Director — Beat ${beatNum}/${totalBeats}: "${beat.label}"]`,
