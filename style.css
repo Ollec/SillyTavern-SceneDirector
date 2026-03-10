@@ -183,3 +183,125 @@
 #sd-wand-btn.sd-active {
     background: var(--SmartThemeBlurTintColor, rgba(0, 0, 0, 0.2));
 }
+
+/* ---- Scene Editor Popup ---- */
+.sd-editor {
+    min-height: 400px;
+}
+
+.sd-editor h4 {
+    margin: 0 0 8px 0;
+    font-size: 1.1em;
+}
+
+.sd-editor label {
+    display: block;
+    font-size: 0.85em;
+    margin: 8px 0 2px;
+}
+
+.sd-editor label small {
+    opacity: 0.6;
+}
+
+.sd-editor-columns {
+    display: flex;
+    gap: 16px;
+}
+
+.sd-editor-left {
+    flex: 0 0 280px;
+    min-width: 200px;
+}
+
+.sd-editor-right {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Beat tabs */
+.sd-editor-beat-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.sd-editor-beat-tab {
+    font-size: 0.85em;
+    padding: 4px 10px;
+}
+
+.sd-editor-beat-tab-active {
+    background: var(--SmartThemeQuoteColor, #4a9eff);
+    color: var(--SmartThemeBodyColor, #fff);
+}
+
+/* Beat panel actions */
+.sd-editor-beat-actions {
+    display: flex;
+    gap: 4px;
+    margin-top: 10px;
+}
+
+.sd-editor-beat-actions .menu_button {
+    flex: 0;
+    padding: 4px 10px;
+}
+
+/* Custom phases */
+.sd-editor-phases-section {
+    margin-top: 12px;
+}
+
+.sd-editor-phases-toggle {
+    font-size: 0.85em;
+    text-align: center;
+}
+
+.sd-editor-phases-content {
+    margin-top: 6px;
+}
+
+.sd-editor-phase-entry {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 4px;
+    margin-bottom: 6px;
+    align-items: center;
+}
+
+.sd-editor-phase-entry .sd-ed-phase-prompt {
+    grid-column: 1 / -1;
+}
+
+.sd-ed-phase-color {
+    width: 36px;
+    height: 30px;
+    padding: 2px;
+    border: none;
+    cursor: pointer;
+    background: transparent;
+}
+
+.sd-editor-add-phase-btn,
+.sd-editor-export-btn {
+    font-size: 0.85em;
+    text-align: center;
+    margin-top: 6px;
+}
+
+.sd-editor-export-section {
+    margin-top: 16px;
+}
+
+/* Responsive: stack columns on narrow screens */
+@media (max-width: 600px) {
+    .sd-editor-columns {
+        flex-direction: column;
+    }
+
+    .sd-editor-left {
+        flex: none;
+    }
+}

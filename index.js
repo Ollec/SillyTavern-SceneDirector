@@ -7,7 +7,7 @@ import {
     saveSettingsDebounced,
     setExtensionPrompt,
 } from '../../../../script.js';
-import { Popup, POPUP_RESULT } from '../../../popup.js';
+import { Popup, POPUP_RESULT, POPUP_TYPE } from '../../../popup.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from '../../../slash-commands/SlashCommandArgument.js';
@@ -230,6 +230,351 @@ async function deleteScene(sceneId) {
     }
 
     return { text: `Deleted scene "${entry.title}".`, ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Scene editor
+// ---------------------------------------------------------------------------
+
+const DEFAULT_PHASES = ['setup', 'rising', 'confrontation', 'climax', 'resolution'];
+
+function escAttr(str) {
+    return String(str ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function escHtml(str) {
+    return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function buildEditorHTML(scene) {
+    const s = scene || { title: '', id: '', character: '', description: '', beats: [{ label: '', phase: 'setup', tone: '', directive: '', key_elements: [], advance_hint: '' }] };
+
+    const phaseOptions = DEFAULT_PHASES.map(p => `<option value="${p}">${p}</option>`).join('');
+
+    let beatTabsHtml = '';
+    let beatPanelsHtml = '';
+    for (let i = 0; i < s.beats.length; i++) {
+        const b = s.beats[i];
+        const active = i === 0 ? ' sd-editor-beat-tab-active' : '';
+        const display = i === 0 ? '' : ' style="display:none;"';
+        beatTabsHtml += `<div class="sd-editor-beat-tab menu_button${active}" data-beat-idx="${i}">${escHtml(b.label || `Beat ${i + 1}`)}</div>`;
+        beatPanelsHtml += buildBeatPanelHTML(i, b, phaseOptions, display);
+    }
+
+    const customPhasesHtml = buildCustomPhasesHTML(s.phases);
+
+    return `
+<div class="sd-editor">
+    <div class="sd-editor-columns">
+        <div class="sd-editor-left">
+            <h4>Scene</h4>
+            <label>Title</label>
+            <input type="text" class="text_pole wide100p" id="sd-ed-title" value="${escAttr(s.title)}" placeholder="Scene title">
+            <label>ID <small>(auto-generated if empty)</small></label>
+            <input type="text" class="text_pole wide100p" id="sd-ed-id" value="${escAttr(s.id)}" placeholder="my_scene_id">
+            <label>Character</label>
+            <input type="text" class="text_pole wide100p" id="sd-ed-character" value="${escAttr(s.character || '')}" placeholder="Any">
+            <label>Description</label>
+            <textarea class="text_pole textarea_compact wide100p" id="sd-ed-description" rows="3" placeholder="Optional description">${escHtml(s.description || '')}</textarea>
+
+            <div class="sd-editor-phases-section">
+                <div class="sd-editor-phases-toggle menu_button">
+                    <i class="fa-solid fa-palette"></i> Custom Phases
+                    <i class="fa-solid fa-chevron-down sd-editor-phases-chevron"></i>
+                </div>
+                <div class="sd-editor-phases-content" style="display:none;">
+                    <div id="sd-ed-phases-list">${customPhasesHtml}</div>
+                    <div class="menu_button sd-editor-add-phase-btn"><i class="fa-solid fa-plus"></i> Add Phase</div>
+                </div>
+            </div>
+
+            <div class="sd-editor-export-section">
+                <div class="menu_button sd-editor-export-btn"><i class="fa-solid fa-download"></i> Export JSON</div>
+            </div>
+        </div>
+        <div class="sd-editor-right">
+            <h4>Beats</h4>
+            <div class="sd-editor-beat-tabs" id="sd-ed-beat-tabs">
+                ${beatTabsHtml}
+                <div class="sd-editor-beat-tab menu_button sd-editor-add-beat-btn" title="Add beat"><i class="fa-solid fa-plus"></i></div>
+            </div>
+            <div id="sd-ed-beat-panels">
+                ${beatPanelsHtml}
+            </div>
+        </div>
+    </div>
+</div>`;
+}
+
+function buildBeatPanelHTML(idx, beat, phaseOptions, display) {
+    const b = beat || { label: '', phase: 'setup', tone: '', directive: '', key_elements: [], advance_hint: '' };
+    const keyElStr = (b.key_elements || []).join(', ');
+
+    // Build phase select with correct selected option
+    const selectHtml = phaseOptions.replace(
+        `value="${escAttr(b.phase)}"`,
+        `value="${escAttr(b.phase)}" selected`,
+    );
+
+    return `
+<div class="sd-editor-beat-panel" data-beat-idx="${idx}"${display}>
+    <label>Label</label>
+    <input type="text" class="text_pole wide100p sd-ed-beat-label" value="${escAttr(b.label)}" placeholder="Beat label">
+    <label>Phase</label>
+    <select class="text_pole wide100p sd-ed-beat-phase">${selectHtml}</select>
+    <label>Tone</label>
+    <input type="text" class="text_pole wide100p sd-ed-beat-tone" value="${escAttr(b.tone)}" placeholder="e.g. tense, hushed, strategic">
+    <label>Directive</label>
+    <textarea class="text_pole textarea_compact wide100p sd-ed-beat-directive" rows="4" placeholder="What should happen in this beat...">${escHtml(b.directive)}</textarea>
+    <label>Key Elements <small>(comma-separated)</small></label>
+    <input type="text" class="text_pole wide100p sd-ed-beat-elements" value="${escAttr(keyElStr)}" placeholder="element1, element2">
+    <label>Advance Hint</label>
+    <input type="text" class="text_pole wide100p sd-ed-beat-hint" value="${escAttr(b.advance_hint || '')}" placeholder="When to move to next beat">
+    <div class="sd-editor-beat-actions">
+        <div class="menu_button sd-editor-beat-up" title="Move up"><i class="fa-solid fa-arrow-up"></i></div>
+        <div class="menu_button sd-editor-beat-down" title="Move down"><i class="fa-solid fa-arrow-down"></i></div>
+        <div class="menu_button sd-editor-beat-delete" title="Delete beat"><i class="fa-solid fa-trash"></i></div>
+    </div>
+</div>`;
+}
+
+function buildCustomPhasesHTML(phases) {
+    if (!phases) return '';
+    return Object.entries(phases).map(([name, cfg]) => `
+<div class="sd-editor-phase-entry">
+    <input type="text" class="text_pole sd-ed-phase-name" value="${escAttr(name)}" placeholder="Phase name">
+    <input type="color" class="sd-ed-phase-color" value="${escAttr(cfg.color || '#4a9eff')}" title="Phase color">
+    <div class="menu_button sd-editor-phase-delete" title="Remove phase"><i class="fa-solid fa-xmark"></i></div>
+    <textarea class="text_pole textarea_compact wide100p sd-ed-phase-prompt" rows="2" placeholder="Phase guidance prompt">${escHtml(cfg.prompt || '')}</textarea>
+</div>`).join('');
+}
+
+function collectEditorData() {
+    const scene = {
+        title: $('#sd-ed-title').val().trim(),
+        id: $('#sd-ed-id').val().trim(),
+        character: $('#sd-ed-character').val().trim() || 'Any',
+        description: $('#sd-ed-description').val().trim(),
+        beats: [],
+    };
+
+    // Collect beats in panel order
+    $('.sd-editor-beat-panel').each(function () {
+        const $p = $(this);
+        const keyElStr = $p.find('.sd-ed-beat-elements').val().trim();
+        scene.beats.push({
+            label: $p.find('.sd-ed-beat-label').val().trim(),
+            phase: $p.find('.sd-ed-beat-phase').val(),
+            tone: $p.find('.sd-ed-beat-tone').val().trim(),
+            directive: $p.find('.sd-ed-beat-directive').val().trim(),
+            key_elements: keyElStr ? keyElStr.split(',').map(s => s.trim()).filter(Boolean) : [],
+            advance_hint: $p.find('.sd-ed-beat-hint').val().trim(),
+        });
+    });
+
+    // Collect custom phases
+    const phaseEntries = [];
+    $('.sd-editor-phase-entry').each(function () {
+        const $e = $(this);
+        const name = $e.find('.sd-ed-phase-name').val().trim();
+        if (!name) return;
+        phaseEntries.push([name, {
+            prompt: $e.find('.sd-ed-phase-prompt').val().trim(),
+            color: $e.find('.sd-ed-phase-color').val(),
+        }]);
+    });
+    if (phaseEntries.length > 0) {
+        scene.phases = Object.fromEntries(phaseEntries);
+    }
+
+    return scene;
+}
+
+function wireEditorEvents($container) {
+    // Beat tab switching
+    $container.on('click', '.sd-editor-beat-tab:not(.sd-editor-add-beat-btn)', function () {
+        const idx = $(this).data('beat-idx');
+        $container.find('.sd-editor-beat-tab').removeClass('sd-editor-beat-tab-active');
+        $(this).addClass('sd-editor-beat-tab-active');
+        $container.find('.sd-editor-beat-panel').hide();
+        $container.find(`.sd-editor-beat-panel[data-beat-idx="${idx}"]`).show();
+    });
+
+    // Add beat
+    $container.on('click', '.sd-editor-add-beat-btn', function () {
+        const phaseOptions = DEFAULT_PHASES.map(p => `<option value="${p}">${p}</option>`).join('');
+        const count = $container.find('.sd-editor-beat-panel').length;
+        const newBeat = { label: `Beat ${count + 1}`, phase: 'setup', tone: '', directive: '', key_elements: [], advance_hint: '' };
+
+        // Hide all panels, add new one
+        $container.find('.sd-editor-beat-panel').hide();
+        $container.find('.sd-editor-beat-tab').removeClass('sd-editor-beat-tab-active');
+
+        const $newTab = $(`<div class="sd-editor-beat-tab menu_button sd-editor-beat-tab-active" data-beat-idx="${count}">${escHtml(newBeat.label)}</div>`);
+        $(this).before($newTab);
+
+        const $newPanel = $(buildBeatPanelHTML(count, newBeat, phaseOptions, ''));
+        $('#sd-ed-beat-panels').append($newPanel);
+    });
+
+    // Delete beat
+    $container.on('click', '.sd-editor-beat-delete', function () {
+        const panels = $container.find('.sd-editor-beat-panel');
+        if (panels.length <= 1) {
+            toastr.warning('A scene must have at least one beat.');
+            return;
+        }
+        const $panel = $(this).closest('.sd-editor-beat-panel');
+        const idx = $panel.data('beat-idx');
+        $panel.remove();
+        $container.find(`.sd-editor-beat-tab[data-beat-idx="${idx}"]`).remove();
+
+        // Reindex remaining panels and tabs
+        reindexBeats($container);
+
+        // Activate first beat
+        const $firstTab = $container.find('.sd-editor-beat-tab:not(.sd-editor-add-beat-btn)').first();
+        $firstTab.addClass('sd-editor-beat-tab-active');
+        $container.find('.sd-editor-beat-panel').first().show();
+    });
+
+    // Move beat up
+    $container.on('click', '.sd-editor-beat-up', function () {
+        const $panel = $(this).closest('.sd-editor-beat-panel');
+        const $prev = $panel.prev('.sd-editor-beat-panel');
+        if ($prev.length) {
+            $panel.insertBefore($prev);
+            reindexBeats($container);
+        }
+    });
+
+    // Move beat down
+    $container.on('click', '.sd-editor-beat-down', function () {
+        const $panel = $(this).closest('.sd-editor-beat-panel');
+        const $next = $panel.next('.sd-editor-beat-panel');
+        if ($next.length) {
+            $panel.insertAfter($next);
+            reindexBeats($container);
+        }
+    });
+
+    // Update tab label when beat label changes
+    $container.on('input', '.sd-ed-beat-label', function () {
+        const $panel = $(this).closest('.sd-editor-beat-panel');
+        const idx = $panel.data('beat-idx');
+        const label = $(this).val().trim() || `Beat ${idx + 1}`;
+        $container.find(`.sd-editor-beat-tab[data-beat-idx="${idx}"]`).text(label);
+    });
+
+    // Custom phases toggle
+    $container.on('click', '.sd-editor-phases-toggle', function () {
+        const $content = $(this).siblings('.sd-editor-phases-content');
+        const $chevron = $(this).find('.sd-editor-phases-chevron');
+        $content.toggle();
+        $chevron.toggleClass('fa-chevron-down fa-chevron-up');
+    });
+
+    // Add custom phase
+    $container.on('click', '.sd-editor-add-phase-btn', function () {
+        const html = `
+<div class="sd-editor-phase-entry">
+    <input type="text" class="text_pole sd-ed-phase-name" value="" placeholder="Phase name">
+    <input type="color" class="sd-ed-phase-color" value="#4a9eff" title="Phase color">
+    <div class="menu_button sd-editor-phase-delete" title="Remove phase"><i class="fa-solid fa-xmark"></i></div>
+    <textarea class="text_pole textarea_compact wide100p sd-ed-phase-prompt" rows="2" placeholder="Phase guidance prompt"></textarea>
+</div>`;
+        $('#sd-ed-phases-list').append(html);
+    });
+
+    // Delete custom phase
+    $container.on('click', '.sd-editor-phase-delete', function () {
+        $(this).closest('.sd-editor-phase-entry').remove();
+    });
+
+    // Export JSON
+    $container.on('click', '.sd-editor-export-btn', function () {
+        const scene = collectEditorData();
+        const json = JSON.stringify(scene, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${scene.id || 'scene'}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+}
+
+function reindexBeats($container) {
+    // Rebuild tabs to match panel order
+    const $tabContainer = $container.find('#sd-ed-beat-tabs');
+    const $addBtn = $tabContainer.find('.sd-editor-add-beat-btn');
+    $tabContainer.find('.sd-editor-beat-tab:not(.sd-editor-add-beat-btn)').remove();
+
+    $container.find('.sd-editor-beat-panel').each(function (i) {
+        $(this).attr('data-beat-idx', i);
+        const label = $(this).find('.sd-ed-beat-label').val().trim() || `Beat ${i + 1}`;
+        const $tab = $(`<div class="sd-editor-beat-tab menu_button" data-beat-idx="${i}">${escHtml(label)}</div>`);
+        $addBtn.before($tab);
+    });
+}
+
+async function openSceneEditor(scene) {
+    const html = buildEditorHTML(scene);
+
+    const popup = new Popup(html, POPUP_TYPE.TEXT, '', {
+        large: true,
+        wide: true,
+        okButton: 'Save',
+        cancelButton: 'Cancel',
+    });
+
+    // Wire events after popup renders
+    requestAnimationFrame(() => {
+        const $container = $(popup.dlg);
+        wireEditorEvents($container);
+    });
+
+    const result = await popup.show();
+
+    if (result !== POPUP_RESULT.AFFIRMATIVE) return;
+
+    const sceneData = collectEditorData();
+
+    // Auto-generate id if empty
+    if (!sceneData.id) {
+        sceneData.id = sceneData.title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+    }
+
+    // Remove empty description
+    if (!sceneData.description) delete sceneData.description;
+
+    // Validate
+    const error = validateScene(sceneData);
+    if (error) {
+        toastr.error(`Cannot save: ${error}`);
+        // Reopen editor with the data
+        await openSceneEditor(sceneData);
+        return;
+    }
+
+    // Save via import pipeline
+    const blob = new Blob([JSON.stringify(sceneData, null, 2)], { type: 'application/json' });
+    const file = new File([blob], `${sceneData.id}.json`, { type: 'application/json' });
+    const importResult = await importScene(file);
+    showResult(importResult);
+
+    if (importResult.ok) {
+        populateSceneSelector();
+
+        // Reload if editing the active scene
+        const state = getSceneState();
+        if (state.active && state.sceneId === sceneData.id) {
+            loadedScene = await loadScene(sceneData.id);
+            injectCurrentBeat();
+            updateProgressPanel();
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -615,6 +960,30 @@ function registerCommands() {
         ],
         helpString: 'Delete an imported scene. Bundled scenes cannot be deleted. Usage: /scene-delete scene_id',
     }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'scene-edit',
+        callback: async (_args, value) => {
+            const sceneId = (value || '').trim();
+            if (!sceneId) {
+                await openSceneEditor(null);
+                return 'Opened new scene editor.';
+            }
+            const scene = await loadScene(sceneId);
+            if (!scene) return `Scene "${sceneId}" not found.`;
+            await openSceneEditor(scene);
+            return `Opened editor for "${scene.title}".`;
+        },
+        returns: 'editor open confirmation',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Optional: Scene ID to edit. Omit to create a new scene.',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
+            }),
+        ],
+        helpString: 'Open the scene editor. Usage: /scene-edit [scene_id]',
+    }));
 }
 
 // ---------------------------------------------------------------------------
@@ -703,6 +1072,19 @@ jQuery(async () => {
         if (!$drawer.hasClass('open')) {
             $toggle.trigger('click');
         }
+    });
+
+    // Wire edit/new buttons
+    $('#sd-edit-btn').on('click', async () => {
+        const sceneId = $('#sd-scene-list').val();
+        if (!sceneId) return;
+        const scene = await loadScene(sceneId);
+        if (!scene) { toastr.warning('Could not load scene.'); return; }
+        await openSceneEditor(scene);
+    });
+
+    $('#sd-new-btn').on('click', async () => {
+        await openSceneEditor(null);
     });
 
     // Wire import controls

@@ -11,6 +11,7 @@ A [SillyTavern](https://github.com/SillyTavern/SillyTavern) extension that guide
 - **Wand menu button** — Clapperboard icon in the extensions menu highlights when a scene is active, with beat counter
 - **Visual progress bar** — Color-coded phase segments show where you are in the scene
 - **Configurable injection depth** — Control how many messages back the beat directive is placed in context
+- **Scene editor** — Create and edit scenes directly in SillyTavern with a full-featured popup editor for beats, phases, and metadata
 - **Scene import/delete** — Import your own scene JSON files through the UI or slash commands; delete imported scenes when no longer needed
 - **Slash commands** — Full control from the chat input
 - **Advance hints** — Optional hints for when to move to the next beat
@@ -39,7 +40,7 @@ Restart SillyTavern and enable the extension.
 
 ### UI Controls
 
-**Extensions Drawer** — Open the **Scene Director** panel in the extensions sidebar. Select a scene from the dropdown and press play. Use the Prev/Next/Stop buttons to navigate beats. The drawer also has settings for advance hints and injection depth.
+**Extensions Drawer** — Open the **Scene Director** panel in the extensions sidebar. Select a scene from the dropdown and press play. Use the Prev/Next/Stop buttons to navigate beats. The Edit button opens a popup editor for the selected scene, and the New button creates a blank scene from scratch. The drawer also has settings for advance hints and injection depth.
 
 **Chat Banner** — When a scene is active, a banner appears at the top of the chat area showing the scene title, current beat label, and a color-coded phase progress bar. The banner includes Prev/Next/Stop buttons for quick navigation without opening the drawer.
 
@@ -67,6 +68,7 @@ Restart SillyTavern and enable the extension.
 | `/scene-stop` | End the current scene |
 | `/scene-import` | Import a scene file (opens file picker, or pass inline JSON) |
 | `/scene-delete <id>` | Delete an imported scene by ID (with confirmation) |
+| `/scene-edit [id]` | Open the scene editor (blank if no ID given) |
 
 ![Slash command autocomplete](docs/images/slash-commands.png)
 

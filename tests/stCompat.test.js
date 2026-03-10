@@ -188,6 +188,10 @@ describe('SillyTavern popup.js exports', () => {
     test('exports POPUP_RESULT', () => {
         expectExport(popupSrc, 'POPUP_RESULT');
     });
+
+    test('exports POPUP_TYPE', () => {
+        expectExport(popupSrc, 'POPUP_TYPE');
+    });
 });
 
 // ---------------------------------------------------------------------------

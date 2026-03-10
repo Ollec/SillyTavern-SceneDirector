@@ -4,11 +4,17 @@ This guide covers how to create scene scripts for Scene Director.
 
 ## Quick Start
 
+**Option A: Built-in Editor**
+1. Open the Scene Director panel and click the **New** button (file-plus icon)
+2. Fill in the scene title, add beats with directives, tones, and phases
+3. Click **Save** — the scene is immediately available in the dropdown
+
+**Option B: Import a JSON File**
 1. Create a JSON file following the format below (e.g., `my_scene.json`)
-2. In SillyTavern, open the Scene Director panel and click **Import Scene**
+2. Click **Import Scene** in the Scene Director panel
 3. Select your file — the scene appears immediately in the dropdown
 
-You can also import via the slash command `/scene-import` or pass inline JSON for programmatic use.
+You can also edit existing scenes by selecting them and clicking the **Edit** button (pencil icon), or use the slash commands `/scene-edit`, `/scene-import`.
 
 ## Scene File Structure
 

@@ -56,7 +56,7 @@ ST_PATH=/path/to/SillyTavern cd tests && pnpm test
 ## Testing
 
 - **Unit tests** (`tests/sceneManager.test.js`) — 54 tests covering pure logic: validation, navigation, injection building, status formatting, phase aliases, custom phase resolution, phase colors
-- **Compatibility tests** (`tests/stCompat.test.js`) — 33 tests that parse actual SillyTavern source files to verify exports (including `getRequestHeaders`, `Popup`, `POPUP_RESULT`), event constants, method signatures, and import path resolution still match what the extension depends on
+- **Compatibility tests** (`tests/stCompat.test.js`) — 34 tests that parse actual SillyTavern source files to verify exports (including `getRequestHeaders`, `Popup`, `POPUP_RESULT`, `POPUP_TYPE`), event constants, method signatures, and import path resolution still match what the extension depends on
 - **Coverage** — 90% threshold on branches/functions/lines/statements, enforced by Jest config
 - **CI** — GitHub Actions (`.github/workflows/test.yml`) runs both test suites with pnpm, shallow-clones SillyTavern `release` branch for compat tests
 
@@ -77,5 +77,5 @@ Key SillyTavern APIs used:
 - `eventSource.on(event_types.GENERATION_STARTED | CHAT_CHANGED)` — lifecycle hooks
 - `SlashCommandParser.addCommandObject()` — register `/scene-*` commands
 - `getRequestHeaders()` — CSRF-authenticated headers for file API calls
-- `Popup.show.confirm()` / `POPUP_RESULT` — confirmation dialogs (from `scripts/popup.js`)
+- `Popup` / `POPUP_TYPE` / `POPUP_RESULT` — modal dialogs and confirmations (from `scripts/popup.js`)
 - File API (`/api/files/upload`, `/api/files/delete`) — store/remove imported scene files
